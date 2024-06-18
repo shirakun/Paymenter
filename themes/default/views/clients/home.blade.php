@@ -94,7 +94,10 @@
                                                     <div class="flex">
                                                         <img src="{{ $product->image }}" alt="{{ $product->name }}" class="w-8 h-8 md:w-12 md:h-12 my-auto rounded-md"
                                                              onerror="removeElement(this);">
-                                                        <strong class="ml-3 my-auto">{{ ucfirst($product->name) }}</strong>
+                                                        <div class="flex flex-col justify-between">
+                                                            <strong class="ml-3 my-auto">{{ ucfirst($product->name) }}</strong>
+                                                            <span class="ml-3 my-auto">{{ $product2->hostname->value??"" }}</span>
+                                                        </div>
                                                     </div>
                                                 </td>
                                                 <td class="py-3 hidden md:table-cell" data-order="0.00">

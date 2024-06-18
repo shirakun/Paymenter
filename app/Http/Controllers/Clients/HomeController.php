@@ -3,12 +3,11 @@
 namespace App\Http\Controllers\Clients;
 
 use App\Helpers\ExtensionHelper;
-use App\Models\Order;
-use App\Models\Invoice;
-use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
 use App\Models\Affiliate;
 use App\Models\Extension;
+use App\Models\Invoice;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Str;
@@ -18,8 +17,8 @@ class HomeController extends Controller
 {
     public function index(Request $request)
     {
-        $user = $request->user();
-        $services = $user->orders()->with(['products', 'products.product'])->get();
+        $user     = $request->user();
+        $services = $user->orders()->with(['products', 'products.product', 'products.hostname'])->get();
         $invoices = Invoice::where('user_id', $user->id)->where('credits', null)->where('status', 'pending')->with(['items.product.order.coupon', 'items.product.product'])->get();
 
         return view('clients.home', compact('services', 'invoices'));
@@ -34,11 +33,11 @@ class HomeController extends Controller
     public function profile(Request $request)
     {
         $user = $request->user();
-        $tfa = new TwoFactorAuth();
+        $tfa  = new TwoFactorAuth();
 
         if (!$user->tfa_secret) {
             $secret = $tfa->createSecret();
-            $qr = $tfa->getQRCodeImageAsDataUri(config('app.name', 'Paymenter') . '-' . $user->email, $secret);
+            $qr     = $tfa->getQRCodeImageAsDataUri(config('app.name', 'Paymenter') . '-' . $user->email, $secret);
 
             return view('clients.profile', compact('secret', 'qr'));
         }
@@ -68,8 +67,8 @@ class HomeController extends Controller
         }
 
         $request->validate([
-            'secret' => 'required|size:16',
-            'code' => 'required|size:6',
+            'secret'   => 'required|size:16',
+            'code'     => 'required|size:6',
             'password' => 'required',
         ]);
 
@@ -77,10 +76,10 @@ class HomeController extends Controller
             return redirect()->back()->with('error', 'Invalid password');
         }
 
-        $tfa = new TwoFactorAuth();
+        $tfa    = new TwoFactorAuth();
         $secret = $request->secret;
-        $code = $request->code;
-        $valid = $tfa->verifyCode($secret, $code);
+        $code   = $request->code;
+        $valid  = $tfa->verifyCode($secret, $code);
 
         if ($valid) {
             $user->tfa_secret = Crypt::encrypt($secret);
@@ -99,7 +98,7 @@ class HomeController extends Controller
      */
     public function destroySessions(Request $request)
     {
-        $user = $request->user();
+        $user     = $request->user();
         $sessions = $user->sessions()->where('id', '!=', $request->session()->getId())->get();
         foreach ($sessions as $session) {
             $session->delete();
@@ -107,7 +106,6 @@ class HomeController extends Controller
 
         return redirect()->back()->with('success', 'Sessions destroyed successfully');
     }
-
 
     public function password()
     {
@@ -125,22 +123,22 @@ class HomeController extends Controller
         $countries = \App\Classes\Constants::countries();
         $request->validate([
             'first_name' => 'required|string',
-            'last_name' => 'required|string',
-            'address' => (config('settings::requiredClientDetails_address') == 1 ? 'required|': 'nullable|') . 'string',
-            'city' => (config('settings::requiredClientDetails_city') == 1 ? 'required|': 'nullable|') . 'string',
-            'country' => (config('settings::requiredClientDetails_country') == 1 ? 'required|': 'nullable|') . 'string|in:' . implode(',', array_keys($countries)),
-            'phone' => (config('settings::requiredClientDetails_phone') == 1 ? 'required|': 'nullable|') . 'string',
-            'zip' => (config('settings::requiredClientDetails_zip') == 1 ? 'required|': 'nullable|') . 'string',
+            'last_name'  => 'required|string',
+            'address'    => (config('settings::requiredClientDetails_address') == 1 ? 'required|' : 'nullable|') . 'string',
+            'city'       => (config('settings::requiredClientDetails_city') == 1 ? 'required|' : 'nullable|') . 'string',
+            'country'    => (config('settings::requiredClientDetails_country') == 1 ? 'required|' : 'nullable|') . 'string|in:' . implode(',', array_keys($countries)),
+            'phone'      => (config('settings::requiredClientDetails_phone') == 1 ? 'required|' : 'nullable|') . 'string',
+            'zip'        => (config('settings::requiredClientDetails_zip') == 1 ? 'required|' : 'nullable|') . 'string',
         ]);
 
-        $user = $request->user();
+        $user             = $request->user();
         $user->first_name = $request->first_name;
-        $user->last_name = $request->last_name;
-        $user->address = $request->address;
-        $user->city = $request->city;
-        $user->country = $request->country;
-        $user->phone = $request->phone;
-        $user->zip = $request->zip;
+        $user->last_name  = $request->last_name;
+        $user->address    = $request->address;
+        $user->city       = $request->city;
+        $user->country    = $request->country;
+        $user->phone      = $request->phone;
+        $user->zip        = $request->zip;
         $user->save();
 
         return redirect()->back()->with('success', 'Profile updated successfully');
@@ -156,7 +154,7 @@ class HomeController extends Controller
         if (config('settings::credits') == false) {
             return abort(404, 'Credits are disabled');
         }
-        $gateways = ExtensionHelper::getGateways();
+        $gateways     = ExtensionHelper::getGateways();
         $userInvoices = Invoice::where('user_id', Auth::user()->id)->with(['items.product.order.coupon', 'items.product.product'])->get();
         return view('clients.credits', compact('gateways', 'userInvoices'));
     }
@@ -173,12 +171,12 @@ class HomeController extends Controller
             return redirect()->back()->with('error', 'Credits are disabled');
         }
         $request->validate([
-            'amount' => 'required|numeric|min:1',
+            'amount'  => 'required|numeric|min:1',
             'gateway' => 'required|string',
         ]);
 
         $gateway = Extension::findOrFail($request->gateway);
-        $amount = $request->amount;
+        $amount  = $request->amount;
         if ($amount < config('settings::minimum_deposit')) {
             return redirect()->back()->with('error', 'Minimum deposit is ' . config('settings::minimum_deposit'));
         }
@@ -191,15 +189,14 @@ class HomeController extends Controller
         }
 
         // Make invoice for user
-        $invoice = new Invoice();
+        $invoice          = new Invoice();
         $invoice->user_id = $user->id;
         $invoice->credits = $amount;
-        $invoice->status = 'pending';
+        $invoice->status  = 'pending';
         $invoice->save();
 
         return redirect(ExtensionHelper::addCredits($gateway, $invoice));
     }
-
 
     public function affiliate()
     {
@@ -221,7 +218,7 @@ class HomeController extends Controller
         if (!config('settings::affiliate')) {
             abort(404);
         }
-        $user = $request->user();
+        $user      = $request->user();
         $affiliate = $user->affiliate;
         if ($affiliate) {
             return redirect()->back()->with('error', 'You already have an affiliate');
@@ -235,9 +232,9 @@ class HomeController extends Controller
         $affiliate->user()->associate($user);
         if (config('settings::affiliate_type') == 'custom') {
             $affiliate->code = $request->code;
-        } else if(config('settings::affiliate_type') == 'random') {
+        } else if (config('settings::affiliate_type') == 'random') {
             $affiliate->code = Str::random(10);
-        } else if(config('settings::affiliate_type') == 'fixed') {
+        } else if (config('settings::affiliate_type') == 'fixed') {
             $affiliate->code = str_replace(' ', '', $user->name);
         }
         $affiliate->save();

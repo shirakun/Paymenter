@@ -2,13 +2,13 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
 
 class OrderProduct extends Model
 {
     use HasFactory;
-    protected $table = 'order_products';
+    protected $table    = 'order_products';
     protected $fillable = [
         'order_id',
         'product_id',
@@ -26,6 +26,11 @@ class OrderProduct extends Model
     public function config()
     {
         return $this->hasMany(OrderProductConfig::class, 'order_product_id', 'id');
+    }
+
+    public function hostname()
+    {
+        return $this->belongsTo(OrderProductConfig::class, 'id', 'order_product_id')->where('key', 'domain');
     }
 
     public function order()
@@ -89,8 +94,10 @@ class OrderProduct extends Model
     public function getOpenInvoices()
     {
         return $this->getInvoices->filter(function ($invoice) {
-            if ($invoice->total() == 0)
+            if ($invoice->total() == 0) {
                 return false;
+            }
+
             return $invoice->status == 'pending';
         });
     }
